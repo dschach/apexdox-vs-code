@@ -6,226 +6,228 @@ import { resolve } from 'path';
 import { window, workspace, WorkspaceFolder } from 'vscode';
 
 class Utils {
-    private static readonly PRIVATE: string = 'private';
-    private static readonly TEST_METHOD: string = 'testmethod';
-    private static COLLECTIONS: string[] = ['list', 'set', 'map'];
-    private static KEYWORDS: string[] = [
-        'abstract',
-        'final',
-        'virtual',
-        'override',
-        'void',
-        'blob',
-        'boolean',
-        'date',
-        'datetime',
-        'decimal',
-        'double',
-        'id',
-        'integer',
-        'long',
-        'object',
-        'string',
-        'time'
-    ];
+  private static readonly PRIVATE: string = 'private';
+  private static readonly TEST_METHOD: string = 'testmethod';
+  private static COLLECTIONS: string[] = ['list', 'set', 'map'];
+  private static KEYWORDS: string[] = [
+    'abstract',
+    'final',
+    'virtual',
+    'override',
+    'void',
+    'blob',
+    'boolean',
+    'date',
+    'datetime',
+    'decimal',
+    'double',
+    'id',
+    'integer',
+    'long',
+    'object',
+    'string',
+    'time',
+  ];
 
-    public static isClassOrInterface(line: string): boolean {
-        // Account for inner classes or @isTest classes without an access modifier; implicitly private
-        if (/.*\bclass\b.*/.test(line.toLowerCase()) || /\s?\binterface\s/i.test(line.toLowerCase())) {
-            return true;
-        }
-
-        return false;
+  public static isClassOrInterface(line: string): boolean {
+    // Account for inner classes or @isTest classes without an access modifier; implicitly private
+    if (/.*\bclass\b.*/.test(line.toLowerCase()) || /\s?\binterface\s/i.test(line.toLowerCase())) {
+      return true;
     }
 
-    public static isEnum(line: string): boolean {
-        line = this.stripAnnotations(line);
-        if (/^(global\s+|public\s+|private\s+)?enum\b.*/.test(line)) {
-            return true;
-        }
+    return false;
+  }
 
-        return false;
+  public static isEnum(line: string): boolean {
+    line = this.stripAnnotations(line);
+    if (/^(global\s+|public\s+|private\s+)?enum\b.*/.test(line)) {
+      return true;
     }
 
-    public static stripAnnotations(line: string): string {
-        let i = 0;
-        while (line && line.trim().startsWith('@')) {
-            line = line.trim().replace(/@\w+\s*(\([\w=.*''/\s]+\))?/, '');
-            if (i >= 100) {
-                break; // infinite loop protect, just in case
-            }
-            i++;
-        }
+    return false;
+  }
 
-        return line;
+  public static stripAnnotations(line: string): string {
+    let i = 0;
+    while (line && line.trim().startsWith('@')) {
+      line = line.trim().replace(/@\w+\s*(\([\w=.*''/\s]+\))?/, '');
+      if (i >= 100) {
+        break; // infinite loop protect, just in case
+      }
+      i++;
     }
 
-    /**
-     * Helper method to determine if a line being parsed should be skipped.
-     * Ignore lines not dealing with scope unless they start with the certain keywords:
-     * We do not want to skip @isTest classes, inner classes, inner interfaces, or inner
-     * enums defined without without explicit access modifiers. These are assumed to be
-     * private. Also, interface methods don't have scope, so don't skip those lines either.
-     */
-    public static shouldSkipLine(line: string, cModel?: ClassModel): boolean {
-        let classNameParts = cModel && cModel.name.split('.') || [''];
-        let className = last(classNameParts);
+    return line;
+  }
 
-        if (!this.getScope(line) &&
-            !line.toLowerCase().startsWith(ApexDox.ENUM + " ") &&
-            !line.toLowerCase().startsWith(ApexDox.CLASS + " ") &&
-            !line.toLowerCase().startsWith(ApexDox.INTERFACE + " ") &&
-            // don't skip default constructors without access modifiers
-            !(cModel && new RegExp('\\b' + className + '\\s*\\(').test(line)) &&
-            // don't skip interface methods - they don't have access modifiers
-            !(cModel && cModel.isInterface && line.includes('('))) {
-                return true;
-        }
+  /**
+   * Helper method to determine if a line being parsed should be skipped.
+   * Ignore lines not dealing with scope unless they start with the certain keywords:
+   * We do not want to skip @isTest classes, inner classes, inner interfaces, or inner
+   * enums defined without without explicit access modifiers. These are assumed to be
+   * private. Also, interface methods don't have scope, so don't skip those lines either.
+   */
+  public static shouldSkipLine(line: string, cModel?: ClassModel): boolean {
+    let classNameParts = (cModel && cModel.name.split('.')) || [''];
+    let className = last(classNameParts);
 
-        return false;
+    if (
+      !this.getScope(line) &&
+      !line.toLowerCase().startsWith(ApexDox.ENUM + ' ') &&
+      !line.toLowerCase().startsWith(ApexDox.CLASS + ' ') &&
+      !line.toLowerCase().startsWith(ApexDox.INTERFACE + ' ') &&
+      // don't skip default constructors without access modifiers
+      !(cModel && new RegExp('\\b' + className + '\\s*\\(').test(line)) &&
+      // don't skip interface methods - they don't have access modifiers
+      !(cModel && cModel.isInterface && line.includes('('))
+    ) {
+      return true;
     }
 
-    /** Can match some implicitly private methods, but not all! */
-    public static getScope(line: string): Option<string, void> {
-        for (let scope of ApexDox.config.scope) {
-            // if line starts with annotations, replace them, so
-            // we can accurately use startsWith to match scope.
-            line = this.stripAnnotations(line).toLowerCase().trim();
-            scope = scope.toLowerCase();
+    return false;
+  }
 
-            // line starts with registered scope
-            if (line.startsWith(scope + ' ')) {
-                return scope;
-            }
+  /** Can match some implicitly private methods, but not all! */
+  public static getScope(line: string): Option<string, void> {
+    for (let scope of ApexDox.config.scope) {
+      // if line starts with annotations, replace them, so
+      // we can accurately use startsWith to match scope.
+      line = this.stripAnnotations(line).toLowerCase().trim();
+      scope = scope.toLowerCase();
 
-            // current scope is testmethod and our line is a test method
-            if (scope === this.TEST_METHOD && line.startsWith(`static ${this.TEST_METHOD} `)) {
-                return scope;
-            }
-        }
+      // line starts with registered scope
+      if (line.startsWith(scope + ' ')) {
+        return scope;
+      }
 
-        // try to reasonably match implicitly private lines if
-        // 'private' included in user's documentable scopes list
-        if (ApexDox.config.scope.includes(this.PRIVATE)) {
-            // match static props or methods
-            if (line.startsWith('static ') && !line.includes(` ${this.TEST_METHOD} `)) {
-                return this.PRIVATE;
-            }
-
-            // match methods that start with
-            // keywords or return primitive types
-            for (let keyword of this.KEYWORDS) {
-                if (line.startsWith(keyword + ' ') && line.includes('(')) {
-                    return this.PRIVATE;
-                }
-            }
-
-            // match methods that return collections
-            for (let collection of this.COLLECTIONS) {
-                if (new RegExp('^' + collection + '<.+>\\s.*').test(line) && line.includes('(')) {
-                    return this.PRIVATE;
-                }
-            }
-        }
+      // current scope is testmethod and our line is a test method
+      if (scope === this.TEST_METHOD && line.startsWith(`static ${this.TEST_METHOD} `)) {
+        return scope;
+      }
     }
 
-    public static previousWord(str: string, searchIdx: number): string {
-        if (!str) {
-            return '';
-        }
+    // try to reasonably match implicitly private lines if
+    // 'private' included in user's documentable scopes list
+    if (ApexDox.config.scope.includes(this.PRIVATE)) {
+      // match static props or methods
+      if (line.startsWith('static ') && !line.includes(` ${this.TEST_METHOD} `)) {
+        return this.PRIVATE;
+      }
 
-        if (searchIdx >= str.length) {
-            return '';
+      // match methods that start with
+      // keywords or return primitive types
+      for (let keyword of this.KEYWORDS) {
+        if (line.startsWith(keyword + ' ') && line.includes('(')) {
+          return this.PRIVATE;
         }
+      }
 
-        let idxStart: number, idxEnd: number;
-        for (idxStart = searchIdx - 1, idxEnd = 0; idxStart > 0; idxStart--) {
-            if (idxEnd === 0) {
-                if (str.charAt(idxStart) === ' ') {
-                    continue;
-                }
-                idxEnd = idxStart + 1;
-            } else if (str.charAt(idxStart) === ' ') {
-                idxStart++;
-                break;
-            }
+      // match methods that return collections
+      for (let collection of this.COLLECTIONS) {
+        if (new RegExp('^' + collection + '<.+>\\s.*').test(line) && line.includes('(')) {
+          return this.PRIVATE;
         }
+      }
+    }
+  }
 
-        return str.substring(idxStart, idxEnd);
+  public static previousWord(str: string, searchIdx: number): string {
+    if (!str) {
+      return '';
     }
 
-    public static countChars(str: string, char: string): number {
-        let count = 0;
-        for (let i = 0; i < str.length; ++i) {
-            if (str.charAt(i) === char) {
-                ++count;
-            }
+    if (searchIdx >= str.length) {
+      return '';
+    }
+
+    let idxStart: number, idxEnd: number;
+    for (idxStart = searchIdx - 1, idxEnd = 0; idxStart > 0; idxStart--) {
+      if (idxEnd === 0) {
+        if (str.charAt(idxStart) === ' ') {
+          continue;
         }
-        return count;
+        idxEnd = idxStart + 1;
+      } else if (str.charAt(idxStart) === ' ') {
+        idxStart++;
+        break;
+      }
     }
 
-    public static isURL(str: string): boolean {
-        if (!str) {
-            return false;
+    return str.substring(idxStart, idxEnd);
+  }
+
+  public static countChars(str: string, char: string): number {
+    let count = 0;
+    for (let i = 0; i < str.length; ++i) {
+      if (str.charAt(i) === char) {
+        ++count;
+      }
+    }
+    return count;
+  }
+
+  public static isURL(str: string): boolean {
+    if (!str) {
+      return false;
+    }
+
+    return /^(https?):\/\/[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]/.test(str.trim());
+  }
+
+  public static resolveWorkspaceFolder(path: string): string {
+    // should be safe to cast this as not-undefined
+    // If running this tool, workspace folders should always exist.
+    const folders = <WorkspaceFolder[]>workspace.workspaceFolders;
+
+    const rootFolderRe = /\$\{workspaceFolder\}(.*)?/;
+    const multiFolderRe = /\$\{workspaceFolder:(.*)\}(.*)/;
+
+    if (rootFolderRe.test(path)) {
+      const results = <RegExpExecArray>rootFolderRe.exec(path);
+      return resolve(folders[0].uri.fsPath, ...results[1].split(/\\|\//));
+    } else if (multiFolderRe.test(path)) {
+      const results = <RegExpExecArray>multiFolderRe.exec(path);
+      for (let folder of folders) {
+        if (folder.name === results[1]) {
+          return resolve(folder.uri.fsPath, ...results[2].split(/\\|\//));
         }
+      }
 
-        return /^(https?):\/\/[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]/.test(str.trim());
+      window.showWarningMessage(`Workspace variable in path '${path}' could not be resolved.`);
     }
 
-    public static resolveWorkspaceFolder(path: string): string {
-        // should be safe to cast this as not-undefined
-        // If running this tool, workspace folders should always exist.
-        const folders = <WorkspaceFolder[]>(workspace.workspaceFolders);
+    return path;
+  }
 
-        const rootFolderRe = /\$\{workspaceFolder\}(.*)?/;
-        const multiFolderRe = /\$\{workspaceFolder:(.*)\}(.*)/;
+  public static escapeRegExp(str: string): string {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
 
-        if (rootFolderRe.test(path)) {
-            const results = <RegExpExecArray>rootFolderRe.exec(path);
-            return resolve(folders[0].uri.fsPath, ...results[1].split(/\\|\//));
-        } else if (multiFolderRe.test(path)) {
-            const results = <RegExpExecArray>multiFolderRe.exec(path);
-            for (let folder of folders) {
-                if (folder.name === results[1]) {
-                    return resolve(folder.uri.fsPath, ...results[2].split(/\\|\//));
-                }
-            }
-
-            window.showWarningMessage(`Workspace variable in path '${path}' could not be resolved.`);
-        }
-
-        return path;
+  // common guard utility for Validator classes
+  public static boolGuard(bool: boolean, defaultValue: boolean): boolean {
+    if (typeof bool !== 'boolean') {
+      return defaultValue;
     }
 
-    public static escapeRegExp(str: string): string {
-        return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return bool;
+  }
+
+  /**
+   * We use the plugin `pretty` to make the output HTML more readable. As a side effect
+   * there is whitespace between the pre and code tags which causes unwanted space in the HTML
+   * document. Here, we're removing that space so pre and code tags do not have space between them.
+   * @param html The html string to make replacements on.
+   */
+  public static preCodeTrim(html: string) {
+    if (!/<pre/.test(html)) {
+      return html;
     }
 
-    // common guard utility for Validator classes
-    public static boolGuard(bool: boolean, defaultValue: boolean): boolean {
-        if (typeof bool !== 'boolean') {
-            return defaultValue;
-        }
-
-        return bool;
-    }
-
-    /**
-     * We use the plugin `pretty` to make the output HTML more readable. As a side effect
-     * there is whitespace between the pre and code tags which causes unwanted space in the HTML
-     * document. Here, we're removing that space so pre and code tags do not have space between them.
-     * @param html The html string to make replacements on.
-     */
-    public static preCodeTrim(html: string) {
-        if (!/<pre/.test(html)) {
-            return html;
-        }
-
-        html = html.replace(/<pre class="([a-z\-]+)">\s+<code>/g, '<pre class="$1"><code>');
-        html = html.replace(/<pre>\s+<code class="([a-z\-]+)">/g, '<pre><code class="$1">');
-        html = html.replace(/<\/code>\s+<\/pre>/g, '</code></pre>');
-        return html;
-    }
+    html = html.replace(/<pre class="([a-z\-]+)">\s+<code>/g, '<pre class="$1"><code>');
+    html = html.replace(/<pre>\s+<code class="([a-z\-]+)">/g, '<pre><code class="$1">');
+    html = html.replace(/<\/code>\s+<\/pre>/g, '</code></pre>');
+    return html;
+  }
 }
 
 export default Utils;

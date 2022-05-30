@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
 const { readdirSync, readFileSync, writeFileSync } = require('fs');
 const { basename, resolve } = require('path');
 
@@ -12,12 +13,12 @@ const sourceFiles = readdirSync(sourceDir);
 const exclude = ['assets', 'Page.html']; // exclude dirs / files snapshots are not needed for
 
 for (let fileOrDirName of sourceFiles) {
-    if (!exclude.includes(fileOrDirName)) {
-        const htmlString = readFileSync(resolve(sourceDir, fileOrDirName)).toString('utf8');
-        const contents = `export default \`${htmlString}\`;`;
-        const qualifiedTargetFileName = resolve(targetDir, basename(fileOrDirName, '.html') + '.ts');
-        writeFileSync(qualifiedTargetFileName, contents);
-    }
+  if (!exclude.includes(fileOrDirName)) {
+    const htmlString = readFileSync(resolve(sourceDir, fileOrDirName)).toString('utf8');
+    const contents = `export default \`${htmlString}\`;`;
+    const qualifiedTargetFileName = resolve(targetDir, basename(fileOrDirName, '.html') + '.ts');
+    writeFileSync(qualifiedTargetFileName, contents);
+  }
 }
 
 console.info('Snapshot reference update complete.');

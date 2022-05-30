@@ -6,14 +6,18 @@ import { IEngineConfig } from '..';
 
 const COMMAND = 'apexdox.serveDocs';
 
-export default function() {
-    return commands.registerCommand(COMMAND, () => {
-        try {
-            const config = Settings.getConfig<IEngineConfig>(Feature.ENGINE);
-            createDocServer(config.targetDirectory, config.title, Validator.port(config.port));
-        } catch (e) {
-            console.error(e);
-            window.showErrorMessage(e.message);
-        }
-    });
+export default function () {
+  return commands.registerCommand(COMMAND, () => {
+    try {
+      const config = Settings.getConfig<IEngineConfig>(Feature.ENGINE);
+      createDocServer(config.targetDirectory, config.title, Validator.port(config.port));
+    } catch (e) {
+      console.log(e);
+      let errorMessage = '';
+      if (e instanceof Error) {
+        errorMessage = e.message;
+      }
+      window.showErrorMessage(errorMessage);
+    }
+  });
 }

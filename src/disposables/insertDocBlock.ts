@@ -6,26 +6,26 @@ import { commands, window } from 'vscode';
 
 const COMMAND = 'apexdox.insertDocBlock';
 
-export default function() {
-    return commands.registerCommand(COMMAND, () => {
-        const editor = window.activeTextEditor;
+export default function () {
+  return commands.registerCommand(COMMAND, () => {
+    const editor = window.activeTextEditor;
 
-        if (editor) {
-            const lineIdx = editor.selection.active.line
-                , stubLine = StubBase.getLineAndType(editor.document, lineIdx);
+    if (editor) {
+      const lineIdx = editor.selection.active.line,
+        stubLine = StubBase.getLineAndType(editor.document, lineIdx);
 
-            switch (stubLine.type) {
-                case StubType.METHOD:
-                    new MethodStub(editor, lineIdx, stubLine).insert();
-                    break;
-                case StubType.TOP_LEVEL_TYPE:
-                    new ClassStub(editor, lineIdx, stubLine).insert();
-                    break;
-                case StubType.PROP_OR_NESTED_TYPE:
-                default:
-                    new DefaultStub(editor, lineIdx, stubLine).insert();
-                    break;
-            }
-        }
-    });
+      switch (stubLine.type) {
+        case StubType.METHOD:
+          new MethodStub(editor, lineIdx, stubLine).insert();
+          break;
+        case StubType.TOP_LEVEL_TYPE:
+          new ClassStub(editor, lineIdx, stubLine).insert();
+          break;
+        case StubType.PROP_OR_NESTED_TYPE:
+        default:
+          new DefaultStub(editor, lineIdx, stubLine).insert();
+          break;
+      }
+    }
+  });
 }

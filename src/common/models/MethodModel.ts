@@ -5,155 +5,162 @@ import { except, last } from '../ArrayUtils';
 import { IMethodParam, Option } from '../..';
 
 class MethodModel extends ApexModel {
+  private _isConstructor: boolean;
 
-    private _isConstructor: boolean;
+  public constructor(
+    comments: string[],
+    nameLine: string,
+    lineNum: number,
+    className = '',
+    sourceUrl?: Option<string>
+  ) {
+    super(comments, sourceUrl);
+    this.setNameLine(nameLine, lineNum);
+    this._isConstructor = this.name.toLowerCase() === last(className.split('.')).toLowerCase();
+  }
 
-    public constructor(comments: string[], nameLine: string, lineNum: number, className = '', sourceUrl?: Option<string>) {
-        super(comments, sourceUrl);
-        this.setNameLine(nameLine, lineNum);
-        this._isConstructor = this.name.toLowerCase() === last(className.split('.')).toLowerCase();
+  public get author(): string {
+    return this._author;
+  }
+
+  public get exception(): string {
+    return this._exception;
+  }
+
+  public get isConstructor(): boolean {
+    return this._isConstructor;
+  }
+
+  public get name(): string {
+    let nameLine = this.nameLine;
+    if (nameLine) {
+      nameLine = nameLine.trim();
+      let lastIndex = nameLine.indexOf('(');
+      if (lastIndex >= 0) {
+        return Utils.previousWord(nameLine, lastIndex);
+      }
     }
 
-    public get author(): string {
-        return this._author;
-    }
+    return '';
+  }
 
-    public get exception(): string {
-        return this._exception;
-    }
+  public get params(): Array<IMethodParam> {
+    const params = new Array<IMethodParam>();
+    const typeMap = this.typesFromNameLine;
 
-    public get isConstructor(): boolean {
-        return this._isConstructor;
-    }
+    for (let paramSignature of this._params) {
+      const param = {} as IMethodParam;
+      paramSignature = GeneratorUtils.encodeText(paramSignature, true).trim();
+      if (paramSignature) {
+        const match: Option<RegExpExecArray, null> = /\s/.exec(paramSignature);
 
-    public get name(): string {
-        let nameLine = this.nameLine;
-        if (nameLine) {
-            nameLine = nameLine.trim();
-            let lastIndex = nameLine.indexOf('(');
-            if (lastIndex >= 0) {
-                return Utils.previousWord(nameLine, lastIndex);
-            }
+        if (match !== null) {
+          const idx = match.index;
+          param.name = paramSignature.substring(0, idx);
+          param.description = paramSignature.substring(idx + 1);
+        } else {
+          param.name = paramSignature;
+          param.description = '';
         }
 
-        return '';
+        const type = typeMap.get(param.name);
+        param.type = type ? GeneratorUtils.encodeText(type) : type;
+
+        params.push(param);
+      }
     }
 
-    public get params(): Array<IMethodParam> {
-        const params = new Array<IMethodParam>();
-        const typeMap = this.typesFromNameLine;
+    return params;
+  }
 
-        for (let paramSignature of this._params) {
-            const param = {} as IMethodParam;
-            paramSignature = GeneratorUtils.encodeText(paramSignature, true).trim();
-            if (paramSignature) {
-                const match: Option<RegExpExecArray, null> = /\s/.exec(paramSignature);
+  public get typesFromNameLine(): Map<string, string> {
+    const params = this.paramsFromNameLine;
+    const paramToType = new Map<string, string>();
 
-                if (match !== null) {
-                    const idx = match.index;
-                    param.name = paramSignature.substring(0, idx);
-                    param.description = paramSignature.substring(idx + 1);
-                } else {
-                    param.name = paramSignature;
-                    param.description = '';
-                }
+    for (let i = 0; i < params.length; i++) {
+      const param = params[i];
+      const prevParam = params[i - 1];
 
-                const type = typeMap.get(param.name);
-                param.type = type ? GeneratorUtils.encodeText(type) : type;
+      let type = '',
+        sliceStart = 0;
+      let reString = `[A-Za-z0-9_.<>,\\s]+?\\s+${Utils.escapeRegExp(param)}`;
 
-                params.push(param);
-            }
-        }
+      if (prevParam) {
+        sliceStart = 1;
+        reString = `${Utils.escapeRegExp(prevParam)}\\s*,${reString}`;
+      }
 
-        return params;
+      const re = new RegExp(reString, 'g');
+      const typeMatcher = this.nameLine.match(re);
+
+      if (typeMatcher) {
+        type = typeMatcher[0].split(' ').slice(sliceStart, -1).join(' ');
+      }
+
+      paramToType.set(param, type);
     }
 
-    public get typesFromNameLine(): Map<string, string> {
-        const params = this.paramsFromNameLine;
-        const paramToType = new Map<string, string>();
+    return paramToType;
+  }
 
-        for (let i = 0; i < params.length; i++) {
-            const param = params[i];
-            const prevParam = params[i-1];
+  public get paramsFromNameLine(): string[] {
+    const nameLine = this.nameLine;
+    const params = nameLine.substring(nameLine.indexOf('(') + 1, nameLine.indexOf(')')).split(',');
 
-            let type = '', sliceStart = 0;
-            let reString = `[A-Za-z0-9_.<>,\\s]+?\\s+${Utils.escapeRegExp(param)}`;
+    const result = except(
+      params.map((param) => {
+        let paramPair = param.trim().split(/\s+/);
+        return paramPair.length === 2 ? paramPair[1] : null;
+      }),
+      [null]
+    );
 
-            if (prevParam) {
-                sliceStart = 1;
-                reString = `${Utils.escapeRegExp(prevParam)}\\s*,${reString}`;
-            }
+    return <string[]>result;
+  }
 
-            const re = new RegExp(reString, 'g');
-            const typeMatcher = this.nameLine.match(re);
+  public get returns(): string {
+    return this._returns;
+  }
 
-            if (typeMatcher) {
-                type = typeMatcher[0].split(' ').slice(sliceStart, -1).join(' ');
-            }
+  // annotations will not exist when parseScope is first called
+  // override parseAnnotations so we can call parseScope again after
+  public parseAnnotations(line: string, previousLine: Option<string, null>): void {
+    super.parseAnnotations(line, previousLine);
+    this.parseScope();
+  }
 
-            paramToType.set(param, type);
-        }
+  // override parseScope so we can check if method is 'isTest'.
+  // isTest methods will initially be recognized as implicitly private.
+  protected parseScope(): void {
+    super.parseScope();
+    if (this._scope === 'private' && this._annotations.map((a) => a.toLowerCase()).includes('@istest')) {
+      this._scope = 'testmethod';
+    }
+  }
 
-        return paramToType;
+  protected setNameLine(nameLine: string, lineNum: number): void {
+    // remove anything after param list
+    if (nameLine) {
+      let i = nameLine.lastIndexOf(')');
+      if (i >= 0 && i < nameLine.length - 1) {
+        nameLine = nameLine.substring(0, i + 1);
+      }
     }
 
-    public get paramsFromNameLine(): string[] {
-        const nameLine = this.nameLine;
-        const params = nameLine
-            .substring(nameLine.indexOf('(') + 1, nameLine.indexOf(')'))
-            .split(',');
+    super.setNameLine(nameLine, lineNum);
+  }
 
-        const result = except(params.map(param => {
-            let paramPair = param.trim().split(/\s+/);
-            return paramPair.length === 2 ? paramPair[1] : null;
-        }), [null]);
+  public get scope() {
+    return this._scope;
+  }
 
-        return <string[]>result;
-    }
+  public set scope(scope: string) {
+    this._scope = scope;
+  }
 
-    public get returns(): string {
-        return this._returns;
-    }
-
-    // annotations will not exist when parseScope is first called
-    // override parseAnnotations so we can call parseScope again after
-    public parseAnnotations(line: string, previousLine: Option<string, null>): void {
-        super.parseAnnotations(line, previousLine);
-        this.parseScope();
-    }
-
-    // override parseScope so we can check if method is 'isTest'.
-    // isTest methods will initially be recognized as implicitly private.
-    protected parseScope(): void {
-        super.parseScope();
-        if (this._scope === 'private' && this._annotations.map(a => a.toLowerCase()).includes('@istest')) {
-            this._scope = 'testmethod';
-        }
-    }
-
-    protected setNameLine(nameLine: string, lineNum: number): void {
-        // remove anything after param list
-        if (nameLine) {
-            let i = nameLine.lastIndexOf(')');
-            if (i >= 0 && i < nameLine.length - 1) {
-                nameLine = nameLine.substring(0, i + 1);
-            }
-        }
-
-        super.setNameLine(nameLine, lineNum);
-    }
-
-    public get scope() {
-        return this._scope;
-    }
-
-    public set scope(scope: string) {
-        this._scope = scope;
-    }
-
-    public get since(): string {
-        return this._since;
-    }
+  public get since(): string {
+    return this._since;
+  }
 }
 
 export { MethodModel };
