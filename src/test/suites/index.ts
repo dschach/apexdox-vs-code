@@ -1,24 +1,14 @@
-export * from './annotations.suite';
-export * from './classes.suite';
-export * from './document.suite';
-export * from './enums.suite';
-export * from './filesAndAssets.suite';
-export * from './methods.suite';
-export * from './properties.suite';
-export * from './seeLink.suite';
-export * from './snapshot.suite';
-
-import * as path from 'path';
-import * as Mocha from 'mocha';
-import * as glob from 'glob';
+import path from 'path';
+import Mocha from 'mocha';
+import glob from 'glob';
 
 export function run(): Promise<void> {
   // Create the mocha test
   const mocha = new Mocha({
     ui: 'tdd',
-    colors: true,
+    color: true,
     inlineDiffs: true,
-    delay: true,
+    delay: true
   });
   //mocha.useColors(true);
 
@@ -49,3 +39,13 @@ export function run(): Promise<void> {
     });
   });
 }
+
+export * from './annotations.suite';
+export * from './classes.suite';
+export * from './document.suite';
+export * from './enums.suite';
+export * from './filesAndAssets.suite';
+export * from './methods.suite';
+export * from './properties.suite';
+export * from './seeLink.suite';
+export * from './snapshot.suite';

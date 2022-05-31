@@ -1,4 +1,3 @@
-import ApexDoxError from './ApexDoxError';
 import { Option } from '../index';
 import { readFileSync } from 'fs';
 

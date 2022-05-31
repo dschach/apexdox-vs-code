@@ -13,7 +13,11 @@ export default function (context: ExtensionContext): Disposable {
       ApexDox.run(config);
     } catch (e) {
       console.log(e);
-      window.showErrorMessage(e.message);
+      let errorMessage = '';
+      if (e instanceof Error) {
+        errorMessage = e.message;
+      }
+      window.showErrorMessage(errorMessage);
     }
   });
 }

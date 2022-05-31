@@ -12,8 +12,12 @@ export default function () {
       const config = Settings.getConfig<IEngineConfig>(Feature.ENGINE);
       createDocServer(config.targetDirectory, config.title, Validator.port(config.port));
     } catch (e) {
-      console.error(e);
-      window.showErrorMessage(e.message);
+      console.log(e);
+      let errorMessage = '';
+      if (e instanceof Error) {
+        errorMessage = e.message;
+      }
+      window.showErrorMessage(errorMessage);
     }
   });
 }

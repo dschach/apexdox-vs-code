@@ -1,32 +1,39 @@
 {
-	"files.exclude": {
-		"out": false
-	},
-	"search.exclude": {
-		"out": true
-	},
-	"editor.codeActionsOnSave": {
-		"source.fixAll.eslint": false
-	},
-	"eslint.validate": ["javascript", "typescript"],
-	// Turn off tsc task auto detection since we have the necessary tasks as npm scripts
-	"typescript.tsc.autoDetect": "off",
-	// if 'Save and Run' is installed, this will prevent you from having to run yaml-2-grammar
-	// script after every modification to the Apex grammar injection Yaml file
-	"saveAndRun": {
-		"commands": [
-			{
-				"match": "apex.tmLanguage.injection.yml",
-				"cmd": "npm run yaml-2-grammar",
-				"useShortcut": false,
-				"silent": false
-			}
-		]
-	},
-	"cSpell.words": ["Docblock", "apexdox"],
-	"eslint.alwaysShowStatus": true,
-	"eslint.debug": true,
-	"editor.formatOnSave": true,
-	"editor.defaultFormatter": "esbenp.prettier-vscode",
-	"editor.tabCompletion": "on"
+  "files.exclude": {
+    "out": false
+  },
+  "search.exclude": {
+    "out": true
+  },
+  "editor.codeActionsOnSave": {
+    "source.fixAll": false,
+    "source.fixAll.eslint": false
+  },
+  "eslint.validate": ["javascript", "typescript"],
+  // Turn off tsc task auto detection since we have the necessary tasks as npm scripts
+  "typescript.tsc.autoDetect": "off",
+  "[javascript]": {
+    "editor.formatOnPaste": false,
+    "editor.formatOnSave": false
+  },
+  // if 'Save and Run' is installed, this will prevent you from having to run yaml-2-grammar
+  // script after every modification to the Apex grammar injection Yaml file
+  "saveAndRun": {
+    "commands": [
+      {
+        "match": "apex.tmLanguage.injection.yml",
+        "cmd": "npm run yaml-2-grammar",
+        "useShortcut": false,
+        "silent": false
+      }
+    ]
+  },
+  "cSpell.words": ["Docblock", "apexdox"],
+  "eslint.alwaysShowStatus": true,
+  "eslint.debug": true,
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.tabCompletion": "on",
+  "eslint.codeActionsOnSave.mode": "problems",
+  "eslint.format.enable": false
 }

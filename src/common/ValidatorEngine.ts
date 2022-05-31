@@ -89,6 +89,7 @@ class ValidatorEngine extends Validator<IEngineConfig> {
       throw new ApexDoxError(ApexDoxError.SCOPE_ENTRIES_MIN);
     }
 
+    // eslint-disable-next-line prefer-const
     let registeredScopes = new Array<string>();
 
     scopes.forEach((scope) => {

@@ -1,3 +1,5 @@
+assets
+*.md
 *.cls
 *.html
 node_modules
@@ -5,3 +7,5 @@ out
 src/test/**
 test-proj/**
 !src/test/**/*.ts
+package.json
+package-lock.json

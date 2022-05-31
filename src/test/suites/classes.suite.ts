@@ -9,8 +9,9 @@ export const createClassesSuite = (files: ITestFile[]) => {
       const testFile = last(only(files, ['TEST_InterfaceClass.html'], 'name'));
       const $ = cheerio.load(testFile.snapshot);
 
+      const fruits: string = $('#item-IncludeTwo').attr('class')+"";
       assert.equal(
-        $('#item-IncludeTwo').attr('class').includes('private'),
+        fruits.includes('private'),
         true,
         'IncludeTwo.cls @isTest class not found or not private.'
       );
@@ -23,7 +24,7 @@ export const createClassesSuite = (files: ITestFile[]) => {
       const innerClasses = $('h2.class-title')
         .toArray()
         .map((el) => $(el).attr('id'))
-        .filter((id) => id.startsWith('TEST_NestedClasses.'));
+        .filter((id) => id?.startsWith('TEST_NestedClasses.'));
 
       const expectedInnerClasses = [
         'TEST_NestedClasses.AbstractChildClass',
@@ -49,7 +50,7 @@ export const createClassesSuite = (files: ITestFile[]) => {
         .toArray()
         .forEach((el) => {
           foundMethods = true;
-          let classNames = $(el).attr('class');
+          const classNames = $(el).attr('class');
           assert.equal(
             classNames,
             'method global',

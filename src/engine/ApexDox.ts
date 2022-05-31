@@ -237,7 +237,7 @@ class ApexDox {
 
       // look for an enum
       if (Utils.isEnum(line)) {
-        let startingLine = lineNum;
+        const startingLine = lineNum;
 
         // handle enums over multiple lines
         while (!line.includes('}')) {
@@ -263,7 +263,7 @@ class ApexDox {
 
       // look for a method
       if (line.includes('(')) {
-        let startingLine = lineNum;
+        const startingLine = lineNum;
 
         // handle methods over multiple lines.
         while (!line.includes(')')) {

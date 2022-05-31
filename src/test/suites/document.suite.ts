@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import cheerio from 'cheerio';
+import * as cheerio from 'cheerio';
 import { basename } from 'path';
 import { except, last, only } from '../../common/ArrayUtils';
 import { ITestFile } from '../..';
@@ -99,7 +99,7 @@ export const createDocumentSuite = (files: ITestFile[]) => {
         .toArray()
         .map((el) => ({
           text: $(el).text().trim(),
-          onclick: $(el).attr('onclick'),
+          onclick: $(el).attr('onclick') + "",
         }))
         .forEach((menuObj) => {
           assert.ok(
@@ -111,7 +111,7 @@ export const createDocumentSuite = (files: ITestFile[]) => {
 
     test('Should capture tag values over multiple lines', function () {
       const testFile = last(only(files, ['TEST_MultiLineTagValues.html'], 'name'));
-      let $ = cheerio.load(testFile.snapshot);
+      const $ = cheerio.load(testFile.snapshot);
 
       const param = $('.param-description')
         .toArray()
@@ -179,7 +179,7 @@ export const createDocumentSuite = (files: ITestFile[]) => {
 
     test('Should preserver whitespace and newlines for supplementary page code examples', function () {
       const indexHtml = last(only(files, ['index.html'], 'name'));
-      let $ = cheerio.load(indexHtml.snapshot);
+      const $ = cheerio.load(indexHtml.snapshot);
 
       const actual = $('code')
         .toArray()
