@@ -1,14 +1,30 @@
 {
-  "trailingComma": "es5",
-  "tabWidth": 4,
-  "semi": false,
-  "singleQuote": true,
-  "overrides": [
-    {
-      "files": "*.json",
-      "options": {
-        "useTabs": false
-      }
-    }
-  ]
+    "trailingComma": "es5",
+    "tabWidth": 2,
+    "useTabs": false,
+    "printWidth": 120,
+    "singleQuote": true,
+    "bracketSameLine": true,
+    "overrides": [
+        {
+            "files": ["*.js"],
+            "options": {
+                "useTabs": false
+            }
+        },
+        {
+            "files": ["*.ts"],
+            "options": {
+                "useTabs": false,
+                "tabWidth": 2
+            }
+        },
+        {
+            "files": ["*.json"],
+            "options": {
+                "useTabs": true,
+                "singleQuote": false
+            }
+        }
+    ]
 }

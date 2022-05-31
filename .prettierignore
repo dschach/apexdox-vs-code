@@ -1,1 +1,7 @@
+*.cls
 *.html
+node_modules
+out
+src/test/**
+test-proj/**
+!src/test/**/*.ts

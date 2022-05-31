@@ -2,6 +2,7 @@ import * as assert from 'assert';
 import { basename } from 'path';
 import { isolateDiffs, isWhiteSpaceOnlyDiff } from '../utils';
 import { ITestFile } from '../..';
+import 'mocha';
 
 /**
  * Create a snapshot test for each file: these tests compare the output documentation with a
@@ -12,29 +13,33 @@ import { ITestFile } from '../..';
  * updated from the resulting test docs. See: ../../scripts/updateSnapshots.js.
  */
 export const createSnapshotSuite = (files: ITestFile[]) => {
-    suite('Snapshot Tests', function() {
-        files.forEach(file => {
-            test(`${file.name} contents should match reference snapshot`, function() {
-                let fileReference: string;
+  suite('Snapshot Tests', function () {
+    files.forEach((file) => {
+      test(`${file.name} contents should match reference snapshot`, function () {
+        let fileReference: string;
 
-                try {
-                    fileReference = require('../snapshots/' + basename(file.name, '.html')).default;
-                } catch (e) {
-                    assert.notEqual('', '', `No snapshot found for ${file.name}, please update reference directory if a new test file was added.`);
-                    return;
-                }
+        try {
+          fileReference = require('../snapshots/' + basename(file.name, '.html')).default;
+        } catch (e) {
+          assert.notEqual(
+            '',
+            '',
+            `No snapshot found for ${file.name}, please update reference directory if a new test file was added.`
+          );
+          return;
+        }
 
-                if (fileReference !== file.snapshot) {
-                    if (isWhiteSpaceOnlyDiff(fileReference, file.snapshot)) {
-                        assert.notEqual('', '', `Snapshot differs in whitespace only (diff not shown)`);
-                    }
+        if (fileReference !== file.snapshot) {
+          if (isWhiteSpaceOnlyDiff(fileReference, file.snapshot)) {
+            assert.notEqual('', '', `Snapshot differs in whitespace only (diff not shown)`);
+          }
 
-                    // we have more than just a whitespace diff, which we'd like to show in the terminal.
-                    // remove trailing and leading identical lines, however, to help consolidate diffs
-                    const { finalReference, finalSnapshot } = isolateDiffs(fileReference.split('\n'), file.reader.toArray());
-                    assert.equal(finalSnapshot, finalReference, `Snapshot does not match reference`);
-                }
-            });
-        });
+          // we have more than just a whitespace diff, which we'd like to show in the terminal.
+          // remove trailing and leading identical lines, however, to help consolidate diffs
+          const { finalReference, finalSnapshot } = isolateDiffs(fileReference.split('\n'), file.reader.toArray());
+          assert.equal(finalSnapshot, finalReference, `Snapshot does not match reference`);
+        }
+      });
     });
+  });
 };
